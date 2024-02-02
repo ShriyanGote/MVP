@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>NBA Player Stats</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>NBA Stats</h1>
+        <form action="{{ url_for('result') }}" method="get">
+            <label for="year">Enter Year (Past 2015):</label>
+            <input type="text" id="year" name="year" required>
+        
+            <label for="player_name">Enter Point's Lower Bound:</label>
+            <input type="text" id="lwr_points" name="lwr_points" required>
+
+            <label for="player_name">Enter eFG's Lower Bound:</label>
+            <input type="text" id="lwr_efg" name="lwr_efg" required>
+
+            <label for="player_name">Enter Games Played Lower Bound:</label>
+            <input type="text" id="lwr_gs" name="lwr_gs" required>
+        
+            <button type="submit">Submit</button>
+        </form>
+    </div>
+</body>
+
+</html>

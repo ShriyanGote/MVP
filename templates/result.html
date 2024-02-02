@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <title>NBA Stats - Result</title>
+</head>
+
+<body>
+    <div class="container">
+        <h1>MVP Scores</h1>
+        <ul>
+            {% for item in result %}
+            <li>{{ item['Player'] }}: {{ item['MVP Score'] }}</li>
+            {% endfor %}
+        </ul>
+        
+    </div>
+</body>
+
+</html>
