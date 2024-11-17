@@ -10,23 +10,29 @@
 
 <body>
     <div class="container">
-        <h1>NBA Stats</h1>
+        <h1>NBA Stats - MVP Scores '(Scale of 50)'</h1>
         <form action="{{ url_for('result') }}" method="get">
-            <label for="year">Enter Year (Past 2015):</label>
+            <label for="year">Enter Year (Post 1990):</label>
             <input type="text" id="year" name="year" required>
         
-            <label for="player_name">Enter Point's Lower Bound:</label>
-            <input type="text" id="lwr_points" name="lwr_points" required>
-
-            <label for="player_name">Enter eFG's Lower Bound:</label>
-            <input type="text" id="lwr_efg" name="lwr_efg" required>
-
-            <label for="player_name">Enter Games Played Lower Bound:</label>
-            <input type="text" id="lwr_gs" name="lwr_gs" required>
+            <label for="lwr_points">Enter Point's Lower Bound (15.0 if not entered):</label>
+            <input type="text" id="lwr_points" name="lwr_points">
+        
+            <label for="lwr_efg">Enter eFG's Lower Bound (40% if not entered):</label>
+            <input type="text" id="lwr_efg" name="lwr_efg">
+        
+            <label for="lwr_gs">Enter Games Played Lower Bound (50 if not entered):</label>
+            <input type="text" id="lwr_gs" name="lwr_gs">
         
             <button type="submit">Submit</button>
-        </form>
+        </form>        
     </div>
-</body>
 
+    <div id="loading-screen" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading...</p>
+    </div>
+
+    <script src="script.js"></script>
+</body>
 </html>

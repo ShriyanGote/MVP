@@ -13,11 +13,12 @@
         <h1>MVP Scores</h1>
         <ul>
             {% for item in result %}
-            <li>{{ item['Player'] }}: {{ item['MVP Score'] }}</li>
+            <li class="player-item">
+                <span class="player-name" style="font-weight: bold !important;">{{ item['Player'] }}</span>
+                <span class="mvp-score">{{ item['MVP Score'] }}</span>
+            </li>
             {% endfor %}
         </ul>
-        
     </div>
 </body>
-
 </html>
