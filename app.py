@@ -3,77 +3,39 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import numpy as np
 import requests
-import torch
-import sklearn
+import pytorch
+import sklearn as sk
 import tensorflow as tf
+
+from calculations import get_mvp_data, calculate_score, extract_team_info, bubble_sort, get_team
 app = Flask(__name__)
-
-# Helper Functions
-def get_mvp_data(data, player):
-    return np.asarray(data[data['Player'] == player])[0]
-
-def calculate_score(player_stats):
-    efg = player_stats[3] * 60
-    stl = player_stats[4] * 20
-    rbs = player_stats[5] * 3
-    ast = player_stats[6] * 4
-    pts = player_stats[7] * 1
-    wins = player_stats[14]
-    rank = player_stats[15]
-    score = (0.15 * (wins + rank)) + (0.28 * pts) + (0.12 * rbs) + (0.16 * ast) + (0.21 * efg) + (0.08 * stl)
-    return round(score, 2)
-
-def extract_team_info(row):
-    try:
-        team_name = row.find('a').text
-        team_abbr = row.find('a')['href'].split('/')[-2].upper()
-        wins = int(row.find('td', {'data-stat': 'wins'}).text)
-        losses = int(row.find('td', {'data-stat': 'losses'}).text)
-        win_loss_pct = row.find('td', {'data-stat': 'win_loss_pct'}).text
-        return {
-            'Team Name': team_name,
-            'Team Abbreviation': team_abbr,
-            'Wins': wins,
-            'Losses': losses,
-            'Win-Loss Percentage': win_loss_pct
-        }
-    except Exception as e:
-        print(f"Error extracting team info: {e}")
-        return None
-
-def bubble_sort(arr):
-    n = len(arr)
-    for i in range(n):
-        for j in range(0, n-i-1):
-            if arr[j]['Wins'] > arr[j+1]['Wins']:
-                arr[j], arr[j+1] = arr[j+1], arr[j]
-    return arr
-
-def get_team(all_teams, team_abb):
-    for i in all_teams:
-        if i['Team Abbreviation'] == team_abb:
-            return i
-    return None
 
 # Routes
 @app.route('/', methods=['GET'])
 def index():
-    print("checking if met")
     return render_template('index.html')
 
 
 @app.route('/result', methods=['GET'])
 def result():
     team_year_stats = request.args.get('year')
-    lwr_points = float(request.args.get('lwr_points', 15))
-    lwr_efg = float(request.args.get('lwr_efg', 40)) * 0.01
-    lwr_gs = int(request.args.get('lwr_gs', 50))
+    lwr_points = request.args.get('lwr_points', '15')  # Default as string '15'
+    lwr_points = float(lwr_points) if lwr_points.strip() else 15.0  # Convert to float or use default
+
+    lwr_efg = request.args.get('lwr_efg', '40')  # Default as string '40'
+    lwr_efg = float(lwr_efg) * 0.01 if lwr_efg.strip() else 0.4  # Convert to fraction or use default
+
+    lwr_gs = request.args.get('lwr_gs', '50')  # Default as string '50'
+    lwr_gs = int(lwr_gs) if lwr_gs.strip() else 50  # Convert to int or use default
+
+
 
     if not team_year_stats:
         return redirect(url_for('index'))
 
     url_team = f"https://www.basketball-reference.com/leagues/NBA_{team_year_stats}_standings.html"
     response = requests.get(url_team)
+    response.encoding = 'utf-8'
 
     if response.status_code != 200:
         return f"Failed to fetch data for year {team_year_stats}. Status code: {response.status_code}", 400
@@ -87,12 +49,14 @@ def result():
         all_teams = bubble_sort(eastern_teams + western_teams)
     except Exception as e:
         return f"Error parsing team data: {e}", 500
-
     for i in range(len(all_teams)):
         all_teams[i]['Rank'] = i + 1
+    
+    
 
     url_player = f"https://www.basketball-reference.com/leagues/NBA_{team_year_stats}_per_game.html"
     response_player = requests.get(url_player)
+    response_player.encoding = 'utf-8'
 
     if response_player.status_code != 200:
         return f"Failed to fetch player stats for year {team_year_stats}. Status code: {response_player.status_code}", 400
@@ -107,6 +71,8 @@ def result():
             if row.find("td")  # Skip empty rows
         ]
 
+        
+
         data = pd.DataFrame(player_stats, columns=column_headers[1:])
         mvp_categories = ["GS", "eFG%", "STL", "TRB", "AST", "PTS"]
 
@@ -119,25 +85,32 @@ def result():
             (data["eFG%"] > lwr_efg)
         ].copy()
 
+
         for category in mvp_categories:
             mvp_data_filtered[f"{category}_Rk"] = mvp_data_filtered[category].rank(pct=True)
-
+        
         result_data = []
         for name in mvp_data_filtered['Player']:
             player = get_mvp_data(mvp_data_filtered, name)
-            player_team = get_team(all_teams, str(player[1]))
+            if player is None:
+                continue 
+            
+            player_team = get_team(all_teams, str(player[2]))
+            
             if not player_team:
-                result_data.append({
-                    'Player': f"{name} (Multiple Teams -> Not Eligible)",
-                    'MVP Score': 0.0
-                })
+                print(f"Team not found for player: {name}")
                 continue
 
             player_fullstats = np.hstack((player, [player_team['Wins'], player_team['Rank']]))
+            if any(pd.isna(player_fullstats)):
+                print(f"Skipping player due to invalid stats: {name}")
+                continue
+            
             result_data.append({
                 'Player': name,
-                'MVP Score': calculate_score(player_fullstats)
+                'MVP Score': calculate_score(player, get_team(all_teams, player_fullstats[2]))
             })
+
 
         result_data_sorted = sorted(result_data, key=lambda x: x['MVP Score'], reverse=True)
         unique_players = set()
@@ -148,8 +121,9 @@ def result():
             if player_name not in unique_players:
                 unique_players.add(player_name)
                 unique_result_data.append(player_data)
-
-        return render_template('result.html', result=[unique_result_data])
+        
+        print(unique_result_data)
+        return render_template('result.html', result=unique_result_data)
 
     except Exception as e:
         return f"Error processing player stats: {e}", 500
