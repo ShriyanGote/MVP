@@ -11,14 +11,18 @@
 <body>
     <div class="container">
         <h1>MVP Scores</h1>
-        <ul>
-            {% for item in result %}
-            <li class="player-item">
-                <span class="player-name" style="font-weight: bold !important;">{{ item['Player'] }}</span>
-                <span class="mvp-score">{{ item['MVP Score'] }}</span>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
+        {% if result %}
+            <ul>
+                {% for item in result %}
+                    <li class="player-item">
+                        <span class="player-name" style="font-weight: bold !important;">{{ item['Player'] }}</span>
+                        <span class="mvp-score">{{ item['MVP Score'] }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p>No players matched the criteria.</p>
+        {% endif %}
+    </div>    
 </body>
 </html>
